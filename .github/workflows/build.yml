@@ -48,28 +48,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install JDK 17 (Android build)
+        if: matrix.arch == 'android'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Android SDK (Android build)
+        if: matrix.arch == 'android'
+        uses: aminya/setup-android@v4
+        with:
+          api-levels: "34"
+          build-tools: "34.0.0"
+          ndk-version: "25.2.9519653"
+
+      - name: Add Android target (Android build)
+        if: matrix.arch == 'android'
+        run: rustup target add aarch64-linux-android
+
       - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04' && matrix.arch != 'android'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf protobuf-compiler pkg-config perl build-essential
-
-      - name: Setup Android SDK (Android build)
-        if: matrix.arch == 'android'
-        uses: android-actions/setup-android@v3
-        with:
-          api-level: 34
-          build-tools: 34.0.0
-
-      - name: Install Android NDK (Android build)
-        if: matrix.arch == 'android'
-        run: |
-          echo "y" | sdkmanager --install "ndk;25.2.9519653"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
-
-      - name: Add Android target (Android build)
-        if: matrix.arch == 'android'
-        run: rustup target add aarch64-linux-android
 
       - name: Disable Homebrew auto update (macOS Intel)
         if: matrix.platform == 'macos-15-intel'
