@@ -39,16 +39,37 @@ jobs:
             args: ''
             arch: 'x64'
 
+          - platform: 'ubuntu-22.04'
+            args: ''
+            arch: 'android'
+
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-22.04' && matrix.arch != 'android'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf protobuf-compiler pkg-config perl build-essential
+
+      - name: Setup Android SDK (Android build)
+        if: matrix.arch == 'android'
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+
+      - name: Install Android NDK (Android build)
+        if: matrix.arch == 'android'
+        run: |
+          echo "y" | sdkmanager --install "ndk;25.2.9519653"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+
+      - name: Add Android target (Android build)
+        if: matrix.arch == 'android'
+        run: rustup target add aarch64-linux-android
 
       - name: Disable Homebrew auto update (macOS Intel)
         if: matrix.platform == 'macos-15-intel'
@@ -72,7 +93,7 @@ jobs:
           choco install strawberryperl nasm -y
           echo "C:\Program Files\NASM" >> $GITHUB_PATH
           echo "C:\Strawberry\perl\bin" >> $GITHUB_PATH
-          
+
       - name: Patch tauri config for Windows build
         if: matrix.platform == 'windows-latest'
         shell: powershell
@@ -97,10 +118,10 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.arch == 'android' && 'aarch64-linux-android' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -121,19 +142,21 @@ jobs:
           releaseName: 'DTV ${{ github.event.inputs.version || github.ref_name }}'
           releaseBody: |
             ## 🎉 DTV Release ${{ github.event.inputs.version || github.ref_name }}
-            
+
             ### 📦 安装包下载
             - **macOS (Apple Silicon)**: DTV_${{ github.event.inputs.version || github.ref_name }}_aarch64.dmg
             - **macOS (Intel)**: DTV_${{ github.event.inputs.version || github.ref_name }}_x64.dmg
             - **Windows**: DTV_${{ github.event.inputs.version || github.ref_name }}_x64-setup.exe
             - **Linux (AppImage)**: DTV_${{ github.event.inputs.version || github.ref_name }}_amd64.AppImage
             - **Linux (Deb)**: DTV_${{ github.event.inputs.version || github.ref_name }}_amd64.deb
-            
+            - **Android (arm64-v8a)**: DTV_${{ github.event.inputs.version || github.ref_name }}_arm64-v8a.apk
+
             ### 🔧 安装说明
             - **macOS**: 下载对应架构的 .dmg 文件，双击安装
             - **Windows**: 下载 .exe 文件，右键以管理员身份运行
             - **Linux**: 下载 .AppImage 文件并添加执行权限，或安装 .deb 包
-            
+            - **Android**: 下载 APK 文件并在手机上安装
+
             ### ⚠️ 注意事项
             - 首次运行可能需要在系统设置中允许应用运行
             - macOS 用户可能需要在「系统偏好设置 > 安全性与隐私」中允许应用
@@ -141,7 +164,6 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
-  # 创建统一的 Release（仅在所有平台构建完成后运行）
   create-release:
     needs: build
     runs-on: ubuntu-latest
@@ -151,4 +173,4 @@ jobs:
         run: |
           echo "✅ 所有平台构建完成！"
           echo "📦 发布版本: ${{ github.event.inputs.version || github.ref_name }}"
-          echo "🎯 支持平台: macOS (Intel + ARM), Windows, Linux"
+          echo "🎯 支持平台: macOS (Intel + ARM), Windows, Linux, Android"

@@ -23,6 +23,21 @@
         "center": true
       }
     ],
+    "android": {
+      "abilities": [
+        {
+          "identifier": "default",
+          "permissions": [
+            "core:default",
+            "core:window:default",
+            "core:window:allow-start-drag",
+            "core:app:allow-exit",
+            "shell:allow-open",
+            "shell:allow-spawn"
+          ]
+        }
+      ]
+    },
     "security": {
       "csp": "default-src 'self' tauri://localhost http://127.0.0.1:* http://localhost:* http://* https://* data: blob:; connect-src 'self' tauri://localhost ipc://localhost http://127.0.0.1:* http://localhost:* http://* https://* ws://127.0.0.1:* ws://localhost:* ws://* wss://*; media-src 'self' tauri://localhost http://127.0.0.1:* http://localhost:* http://* https://* data: blob:; media-src-elem 'self' tauri://localhost http://127.0.0.1:* http://localhost:* http://* https://* blob:; img-src 'self' tauri://localhost data: blob: http://127.0.0.1:* http://localhost:* http://* https://*; font-src 'self' data: https://*; script-src 'self' 'unsafe-eval' blob: 'wasm-unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; worker-src blob:; child-src blob:; object-src blob:; base-uri 'self'"
     }
@@ -43,8 +58,17 @@
       "nsis",
       "msi",
       "deb",
-      "appimage"
+      "appimage",
+      "android"
     ],
+    "android": {
+      "minSdk": "24",
+      "targetSdk": "34",
+      "debug": false,
+      "resources": {
+        "include": []
+      }
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

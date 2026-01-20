@@ -1,0 +1,22 @@
+{
+  "identifier": "default",
+  "description": "Default capabilities for the main application",
+  "context": "local",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:default",
+    "core:window:allow-start-drag",
+    "core:app:allow-exit",
+    "shell:allow-open",
+    "shell:allow-spawn",
+    "core:resource:allow-start",
+    "core:path:allow-all",
+    "core:http:allow-fetch",
+    "core:http:fetch",
+    "core:notification:default",
+    "core:os:allow-exit",
+    "core:process:allow-command",
+    "core:shell:allow-open"
+  ]
+}
