@@ -39,42 +39,13 @@ jobs:
             args: ''
             arch: 'x64'
 
-          - platform: 'ubuntu-22.04'
-            args: ''
-            arch: 'android'
-
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install JDK 17 (Android build)
-        if: matrix.arch == 'android'
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Install Android SDK (Android build)
-        if: matrix.arch == 'android'
-        run: |
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdline-tools.zip
-          unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk
-          mkdir -p /opt/android-sdk/cmdline-tools/latest
-          mv /opt/android-sdk/cmdline-tools/bin /opt/android-sdk/cmdline-tools/latest/
-          mv /opt/android-sdk/cmdline-tools/lib /opt/android-sdk/cmdline-tools/latest/
-          echo "ANDROID_HOME=/opt/android-sdk" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> $GITHUB_ENV
-          echo "/opt/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
-          /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653" > /dev/null 2>&1
-
-      - name: Add Android target (Android build)
-        if: matrix.arch == 'android'
-        run: rustup target add aarch64-linux-android
-
       - name: Install dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04' && matrix.arch != 'android'
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf protobuf-compiler pkg-config perl build-essential
@@ -128,8 +99,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.arch == 'android' && 'aarch64-linux-android' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -157,13 +126,11 @@ jobs:
             - **Windows**: DTV_${{ github.event.inputs.version || github.ref_name }}_x64-setup.exe
             - **Linux (AppImage)**: DTV_${{ github.event.inputs.version || github.ref_name }}_amd64.AppImage
             - **Linux (Deb)**: DTV_${{ github.event.inputs.version || github.ref_name }}_amd64.deb
-            - **Android (arm64-v8a)**: DTV_${{ github.event.inputs.version || github.ref_name }}_arm64-v8a.apk
 
             ### 🔧 安装说明
             - **macOS**: 下载对应架构的 .dmg 文件，双击安装
             - **Windows**: 下载 .exe 文件，右键以管理员身份运行
             - **Linux**: 下载 .AppImage 文件并添加执行权限，或安装 .deb 包
-            - **Android**: 下载 APK 文件并在手机上安装
 
             ### ⚠️ 注意事项
             - 首次运行可能需要在系统设置中允许应用运行
@@ -171,6 +138,67 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+
+  build-android:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Android SDK
+        run: |
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdline-tools.zip
+          unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk
+          mkdir -p /opt/android-sdk/cmdline-tools/latest
+          mv /opt/android-sdk/cmdline-tools/bin /opt/android-sdk/cmdline-tools/latest/
+          mv /opt/android-sdk/cmdline-tools/lib /opt/android-sdk/cmdline-tools/latest/
+          echo "ANDROID_HOME=/opt/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> $GITHUB_ENV
+          echo "/opt/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
+          /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653" > /dev/null 2>&1
+
+      - name: Add Android target
+        run: rustup target add aarch64-linux-android
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: 'aarch64-linux-android'
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      - name: Initialize Android project
+        run: npx tauri android init
+        working-directory: ./src-tauri
+
+      - name: Build Android APK
+        run: npx tauri android build
+        working-directory: ./src-tauri
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: src-tauri/android/**/build/outputs/apk/release/*.apk
 
   create-release:
     needs: build
@@ -181,4 +209,4 @@ jobs:
         run: |
           echo "✅ 所有平台构建完成！"
           echo "📦 发布版本: ${{ github.event.inputs.version || github.ref_name }}"
-          echo "🎯 支持平台: macOS (Intel + ARM), Windows, Linux, Android"
+          echo "🎯 支持平台: macOS (Intel + ARM), Windows, Linux"
