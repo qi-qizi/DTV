@@ -55,13 +55,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Android SDK (Android build)
+      - name: Setup Android SDK (Android build)
         if: matrix.arch == 'android'
-        uses: aminya/setup-android@v4
+        uses: browser-actions/setup-android@v1
         with:
-          api-levels: "34"
-          build-tools: "34.0.0"
-          ndk-version: "25.2.9519653"
+          api-level: 34
 
       - name: Add Android target (Android build)
         if: matrix.arch == 'android'
