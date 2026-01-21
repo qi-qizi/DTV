@@ -1,6 +1,5 @@
-[target.aarch64-linux-android]
-ar = "/opt/android-sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-ar"
-ranlib = "/opt/android-sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-ranlib"
-
 [target.aarch64-linux-android.env]
 ANDROID_NDK_ROOT = "/opt/android-sdk/ndk/25.2.9519653"
+AR = "/opt/android-sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-ar"
+RANLIB = "/opt/android-sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-ranlib"
+CC = "/opt/android-sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang"
