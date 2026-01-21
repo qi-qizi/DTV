@@ -9,10 +9,10 @@ out
 # Rust
 target/
 **/*.rs.bk
-Cargo.lock
-.cargo/
 src-tauri/gen/android/
 src-tauri/keys/private.key
+!src-tauri/.cargo/
+!src-tauri/.cargo/config.toml
 next-env.d.ts
 
 # macOS
